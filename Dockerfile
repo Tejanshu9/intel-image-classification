@@ -1,10 +1,10 @@
 # ======================================================
-# Base Image (TensorFlow-compatible)
+# Base Image
 # ======================================================
 FROM python:3.11-slim
 
 # ======================================================
-# System dependencies (needed for image processing)
+# System dependencies
 # ======================================================
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -13,22 +13,28 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ======================================================
-# Set working directory
+# Working directory
 # ======================================================
 WORKDIR /app
 
 # ======================================================
-# Copy requirements and install dependencies
+# Install Python dependencies
 # ======================================================
 COPY requirements.txt .
-
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ======================================================
 # Copy application code and model
 # ======================================================
+RUN mkdir -p models
 COPY src/predict.py .
 COPY models/model.keras models/model.keras
+
+# ======================================================
+# Non-root user (recommended)
+# ======================================================
+RUN useradd -m appuser
+USER appuser
 
 # ======================================================
 # Expose API port
@@ -36,6 +42,6 @@ COPY models/model.keras models/model.keras
 EXPOSE 9696
 
 # ======================================================
-# Run with gunicorn
+# Run with Gunicorn
 # ======================================================
-CMD ["gunicorn", "--bind=0.0.0.0:9696", "predict:app"]
+CMD ["gunicorn", "--bind=0.0.0.0:9696", "--workers=1", "--threads=4", "predict:app"]

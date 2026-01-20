@@ -2,27 +2,39 @@
 # coding: utf-8
 
 import os
+import random
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.applications.xception import Xception, preprocess_input
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 # ======================================================
-# PARAMETERS
+# REPRODUCIBILITY
+# ======================================================
+
+SEED = 42
+tf.random.set_seed(SEED)
+np.random.seed(SEED)
+random.seed(SEED)
+
+# ======================================================
+# PARAMETERS (FINAL, FIXED)
 # ======================================================
 
 INPUT_SIZE = 299
 BATCH_SIZE = 16          # reduced to avoid GPU OOM
-EPOCHS = 10
+EPOCHS = 20
 LEARNING_RATE = 1e-3
-DROPOUT_RATE = 0.5
+DROPOUT_RATE = 0.2       # chosen from notebook
 INNER_SIZE = 100
 
 DATA_DIR = "./data/intel-image-classification"
 MODEL_PATH = "models/model.keras"
 
 # ======================================================
-# GPU CONFIG (IMPORTANT)
+# GPU CONFIG
 # ======================================================
 
 gpus = tf.config.list_physical_devices("GPU")
@@ -31,12 +43,12 @@ if gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
 # ======================================================
-# DATA GENERATORS
+# DATA GENERATORS (CORRECT WAY)
 # ======================================================
 
 def create_data_generators(input_size, batch_size):
 
-    train_gen = ImageDataGenerator(
+    gen = ImageDataGenerator(
         preprocessing_function=preprocess_input,
         shear_range=10,
         zoom_range=0.1,
@@ -44,22 +56,19 @@ def create_data_generators(input_size, batch_size):
         validation_split=0.2
     )
 
-    val_gen = ImageDataGenerator(
-        preprocessing_function=preprocess_input,
-        validation_split=0.2
-    )
-
-    train_ds = train_gen.flow_from_directory(
+    train_ds = gen.flow_from_directory(
         os.path.join(DATA_DIR, "seg_train/seg_train"),
         target_size=(input_size, input_size),
         batch_size=batch_size,
+        class_mode="categorical",
         subset="training"
     )
 
-    val_ds = val_gen.flow_from_directory(
+    val_ds = gen.flow_from_directory(
         os.path.join(DATA_DIR, "seg_train/seg_train"),
         target_size=(input_size, input_size),
         batch_size=batch_size,
+        class_mode="categorical",
         subset="validation",
         shuffle=False
     )
@@ -103,7 +112,7 @@ def make_model(input_size, learning_rate, inner_size, dropout_rate):
     return model
 
 # ======================================================
-# TRAINING LOGIC
+# TRAINING
 # ======================================================
 
 def train():
@@ -119,14 +128,22 @@ def train():
         dropout_rate=DROPOUT_RATE
     )
 
+    checkpoint = ModelCheckpoint(
+        MODEL_PATH,
+        monitor="val_loss",
+        save_best_only=True,
+        verbose=1
+    )
+
     print("Training model...")
     history = model.fit(
         train_ds,
         validation_data=val_ds,
-        epochs=EPOCHS
+        epochs=EPOCHS,
+        callbacks=[checkpoint]
     )
 
-    return model, history
+    return history
 
 # ======================================================
 # MAIN
@@ -136,9 +153,6 @@ if __name__ == "__main__":
 
     os.makedirs("models", exist_ok=True)
 
-    model, history = train()
+    train()
 
-    print("Saving model...")
-    model.save(MODEL_PATH)
-
-    print(f"Model saved to {MODEL_PATH}")
+    print(f"Training completed. Best model saved to {MODEL_PATH}")

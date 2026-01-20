@@ -36,3 +36,10 @@ env/
 
 # Docker
 *.tar
+
+# ======================
+# Model artifacts
+# ======================
+*.h5
+*.keras
+checkpoints/

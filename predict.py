@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import os
+import io
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -15,6 +15,7 @@ from flask import Flask, request, jsonify
 
 MODEL_PATH = "models/model.keras"
 INPUT_SIZE = 299
+
 CLASS_NAMES = [
     "buildings",
     "forest",
@@ -25,7 +26,7 @@ CLASS_NAMES = [
 ]
 
 # ======================================================
-# LOAD MODEL (ONCE, AT STARTUP)
+# LOAD MODEL
 # ======================================================
 
 model = keras.models.load_model(MODEL_PATH)
@@ -37,14 +38,11 @@ model = keras.models.load_model(MODEL_PATH)
 app = Flask("intel-image-classification")
 
 # ======================================================
-# IMAGE PREPROCESSING FUNCTION
+# IMAGE PREPROCESSING
 # ======================================================
 
-def prepare_image(image_path):
-    """
-    Load image from disk and prepare it for prediction
-    """
-    img = load_img(image_path, target_size=(INPUT_SIZE, INPUT_SIZE))
+def prepare_image(file):
+    img = load_img(file, target_size=(INPUT_SIZE, INPUT_SIZE))
     x = img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
@@ -56,35 +54,22 @@ def prepare_image(image_path):
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    """
-    Expects JSON with:
-    {
-        "image_path": "/path/to/image.jpg"
-    }
-    """
 
-    data = request.get_json()
+    if "file" not in request.files:
+        return jsonify({"error": "file is required"}), 400
 
-    if "image_path" not in data:
-        return jsonify({"error": "image_path is required"}), 400
+    file = request.files["file"]
 
-    image_path = data["image_path"]
-
-    if not os.path.exists(image_path):
-        return jsonify({"error": "Image not found"}), 404
-
-    x = prepare_image(image_path)
+    x = prepare_image(file)
 
     preds = model.predict(x)
     probs = tf.nn.softmax(preds[0]).numpy()
 
     pred_idx = int(np.argmax(probs))
-    pred_class = CLASS_NAMES[pred_idx]
-    confidence = float(probs[pred_idx])
 
     result = {
-        "class": pred_class,
-        "confidence": confidence
+        "class": CLASS_NAMES[pred_idx],
+        "confidence": float(probs[pred_idx])
     }
 
     return jsonify(result)
@@ -94,4 +79,4 @@ def predict():
 # ======================================================
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=9696)
+    app.run(host="0.0.0.0", port=9696)
