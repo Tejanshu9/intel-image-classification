@@ -41,5 +41,5 @@ env/
 # Model artifacts
 # ======================
 *.h5
-*.keras
+
 checkpoints/
