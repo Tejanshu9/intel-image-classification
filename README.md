@@ -1,4 +1,4 @@
-# Intel Image Classification (CNN + Fly.io Deployment)
+# Intel Image Classification
 
 This project is an end-to-end **image classification service** built using **transfer learning with Xception**, trained on the **Intel Image Classification dataset**, and deployed as a **containerized inference API on Fly.io**. The service accepts an image file and returns the predicted class along with confidence scores.
 
@@ -166,38 +166,22 @@ curl -X POST \
 
 ---
 
-## ☁️ Fly.io Deployment
 
-The application is deployed on **Fly.io** using Docker and Gunicorn.
+## ☁️ Cloud Deployment (Fly.io)
 
-### Prerequisites
+The model is deployed on Fly.io and exposed as a REST API.
+
+### 🔗 API Endpoint
+
+### 🚀 Example Request
+
 ```bash
-# Install flyctl
-curl -L https://fly.io/install.sh | sh
-
-# Login
-flyctl auth login
+curl -X POST \
+  -F "file=@30.jpg" \
+  https://intel-image-classification.fly.dev/predict
 ```
 
-### Deploy
-```bash
-flyctl deploy
-```
 
-Fly.io automatically:
-- Builds the Docker image
-- Pushes it to the registry
-- Deploys to a global edge network
-
----
-
-
-
-📸 **Screenshot**
-
-> *(Insert terminal screenshot here showing the `curl` request and response)*
-
----
 
 ## ⚙️ Requirements
 
