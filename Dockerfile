@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code and model
 # ======================================================
 RUN mkdir -p models
-COPY src/predict.py .
+COPY predict.py .
 COPY models/model.keras models/model.keras
 
 # ======================================================
@@ -44,4 +44,5 @@ EXPOSE 9696
 # ======================================================
 # Run with Gunicorn
 # ======================================================
-CMD ["gunicorn", "--bind=0.0.0.0:9696", "--workers=1", "--threads=4", "predict:app"]
+CMD ["python", "-m", "gunicorn", "--bind=0.0.0.0:9696", "predict:app"]
+

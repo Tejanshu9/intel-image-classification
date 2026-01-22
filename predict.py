@@ -26,7 +26,7 @@ CLASS_NAMES = [
 ]
 
 # ======================================================
-# LOAD MODEL
+# LOAD MODEL (ONCE AT STARTUP)
 # ======================================================
 
 model = keras.models.load_model(MODEL_PATH)
@@ -42,7 +42,13 @@ app = Flask("intel-image-classification")
 # ======================================================
 
 def prepare_image(file):
-    img = load_img(file, target_size=(INPUT_SIZE, INPUT_SIZE))
+    """
+    Convert uploaded file to model-ready tensor
+    """
+    img = load_img(
+        io.BytesIO(file.read()),
+        target_size=(INPUT_SIZE, INPUT_SIZE)
+    )
     x = img_to_array(img)
     x = np.expand_dims(x, axis=0)
     x = preprocess_input(x)
@@ -59,6 +65,9 @@ def predict():
         return jsonify({"error": "file is required"}), 400
 
     file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"error": "empty filename"}), 400
 
     x = prepare_image(file)
 
