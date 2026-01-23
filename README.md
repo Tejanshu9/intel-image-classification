@@ -228,6 +228,10 @@ python train.py
 
 ---
 
+**Screenshot:**
+
+<img width="540" height="98" alt="Screenshot 2026-01-23 at 8 53 50 AM" src="https://github.com/user-attachments/assets/1b563ace-0b68-4c7e-88be-c75d8f41822a" />
+
 ## 📌 Key Learnings
 
 * Transfer learning with frozen Xception base dramatically reduces training time
